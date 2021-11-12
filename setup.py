@@ -1,13 +1,13 @@
 import setuptools
 import re
 
-
+pattern = r'^\#.*'
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-proj_name = re.search(r'^\#.*', long_description).group()[2:]
-description = ""
-install_requires = []
+proj_name = re.search(pattern, long_description).group()[2:]
+description = "ElasticSearch Handler"
+install_requires = ['elasticsearch', 'requests']
 author = "Supplayer"
 author_email = "x254724521@hotmail.com"
 
