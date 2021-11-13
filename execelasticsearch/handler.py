@@ -3,30 +3,36 @@ from elasticsearch import Elasticsearch, helpers, exceptions
 from json import loads, dumps
 
 
-def _pack(body: str):
+def _pack(body):
+    body = dumps(body).replace('{', '{{').replace('}', '}}').replace('{{}}', '{}')
     return lambda *args: loads(body.format(*args))
 
 
 class SearchBody:
-    body_list = dict(
-        exists=_pack('{{"query": {{"bool": {{"must_not": {{"exists": {{"field": "{}"}}}}}}}}}}'),
+    __body_list = dict(
+        exists=_pack({"query": {"bool": {"must": {"exists": {"field": "{}"}}}}}),
+        not_exists=_pack({"query": {"bool": {"must_not": {"exists": {"field": "{}"}}}}}),
     )
 
-    def __setitem__(self, body_type, body_args: str):
-        self.body_list.update({body_type: _pack(dumps(body_args))})
+    def __setitem__(self, body_type: str, body_args: str):
+        self.__body_list.update({body_type.lower(): _pack(body_args)})
 
-    def __getitem__(self, body_args):
-        return self.body_list[body_args]
+    def __getitem__(self, body_type):
+        return self.__body_list[body_type]
 
     def update(self, **kwargs):
-        self.body_list.update({body_type: _pack(dumps(body_args)) for body_type, body_args in kwargs.items()})
+        self.__body_list.update({body_type.lower(): _pack(body_args) for body_type, body_args in kwargs.items()})
+
+    @property
+    def body_type_list(self):
+        return list(self.__body_list.keys())
 
 
 class ExecES:
     def __init__(self, **kwargs):
         self.__clients = Clients(**kwargs)
         self.__doc_type = lambda host: self.__clients[host].transport.kwargs.get('doc_type')
-        self.__search_body = SearchBody()
+        self.search_body = SearchBody()
 
     def __getitem__(self, item) -> Elasticsearch:
         return self.__clients[item]
@@ -53,13 +59,13 @@ class ExecES:
 
     def bulk_upsert(self, index: str, data: list = None, hosts: list = None, primary='id', chunk_size=500, **kwargs):
         exists_ids = self.exists_ids(index, [i[primary] for i in data], hosts)
-        return {host: dict([self.__bulk_upsert_report(k, v) for k, v in helpers.parallel_bulk(
+        return {host: dict([self.__bulk_upsert_report(v) for k, v in helpers.parallel_bulk(
             self.__clients[host], self.__bulk_upsert(primary, data, exists_ids[host]), index=index,
             chunk_size=chunk_size, **kwargs)]) for host in set(hosts)}
 
     def bulk_delete(self, index: str, ids: list = None, hosts: list = None,
                     chunk_size=500, ignore_status=(404,), **kwargs):
-        return {host: dict([self.__bulk_upsert_report(k, v) for k, v in helpers.parallel_bulk(
+        return {host: dict([self.__bulk_upsert_report(v) for k, v in helpers.parallel_bulk(
             self.__clients[host], actions=[{'_op_type': 'delete', '_id': i} for i in ids],
             index=index, chunk_size=chunk_size, ignore_status=ignore_status, **kwargs)]) for host in set(hosts)}
 
@@ -69,10 +75,13 @@ class ExecES:
     def exists_ids(self, index: str, ids: list, hosts: list, **kwargs):
         return {host: list(self.__mget(index, ids, host, **kwargs).keys()) for host in set(hosts)}
 
-    def search(self, index: str, body_type, body_args: list, host: str, doc_type=None,
+    def search(self, index: str, body_type: str, body_args: tuple, host: str, doc_type=None,
                scroll='2m', size=1000, _source_includes=None, **kwargs) -> iter:
+        """
+        body_type: execelasticsearch.handler.SearchBody().body_type_list will show default body_type.
+        """
         source = True if _source_includes or kwargs.get('_source_excludes') else False
-        body = self.__search_body[body_type](*body_args)
+        body = self.search_body[body_type](*body_args)
         res = self.__clients[host].search(index=index, body=body, doc_type=doc_type or self.__doc_type(host),
                                           scroll=scroll, size=size, _source=source,
                                           _source_includes=_source_includes, **kwargs)
@@ -109,7 +118,7 @@ class ExecES:
                     {'_op_type': 'create', '_source': i}), **{'_id': i[primary]}} for i in data]
 
     @classmethod
-    def __bulk_upsert_report(cls, k, v):
+    def __bulk_upsert_report(cls, v):
         res = v.get("create") or v.get('update') or v.get('delete')
         # return dict(_index=res['_index'], _id=res['_id'], result=res['result'], status=k)
         return res['_id'], res['result']
