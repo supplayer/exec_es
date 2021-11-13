@@ -5,27 +5,30 @@ from elasticsearch import Elasticsearch, helpers, exceptions
 class ExecES:
     def __init__(self, **kwargs):
         self.__clients = Clients(**kwargs)
+        self.__doc_type = lambda host: self.__clients[host].transport.kwargs.get('doc_type')
 
     def __getitem__(self, item) -> Elasticsearch:
         return self.__clients[item]
 
     def create(self, index: str, id_, data: dict, hosts: list, doc_type=None, **kwargs):
-        return {host: self.__clients[host].create(index=index, id=id_, doc_type=doc_type, document=data, **kwargs)
-                for host in set(hosts)}
+        return {host: self.__clients[host].create(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                                  document=data, **kwargs) for host in set(hosts)}
 
     def update(self, index: str, id_, data: dict, hosts: list, doc_type=None, **kwargs):
-        return {host: self.__clients[host].update(index=index, id=id_, doc_type=doc_type, body={'doc': data}, **kwargs)
-                for host in set(hosts)}
+        return {host: self.__clients[host].update(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                                  body={'doc': data}, **kwargs) for host in set(hosts)}
 
     def delete(self, index: str, id_, hosts: list, doc_type=None, **kwargs):
-        return {host: self.__clients[host].delete(index=index, id=id_, doc_type=doc_type, **kwargs)
-                for host in set(hosts)}
+        return {host: self.__clients[host].delete(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                                  **kwargs) for host in set(hosts)}
 
     def update_or_ignore(self, index: str, id_, data: dict, hosts: list, doc_type=None, **kwargs):
-        return {host: self.__update_or_ignore(index, id_, data, host, doc_type, **kwargs) for host in set(hosts)}
+        return {host: self.__update_or_ignore(index, id_, data, host, doc_type or self.__doc_type(host),
+                                              **kwargs) for host in set(hosts)}
 
     def upsert(self, index: str, id_, data: dict, hosts: list, doc_type=None, **kwargs):
-        return {host: self.__upsert(index, id_, data, host, doc_type, **kwargs) for host in set(hosts)}
+        return {host: self.__upsert(index, id_, data, host, doc_type or self.__doc_type(host),
+                                    **kwargs) for host in set(hosts)}
 
     def bulk_upsert(self, index: str, data: list = None, hosts: list = None, primary='id', chunk_size=500, **kwargs):
         exists_ids = self.exists_ids(index, [i[primary] for i in data], hosts)
@@ -47,15 +50,18 @@ class ExecES:
 
     def __update_or_ignore(self, index: str, id_, data: dict, host, doc_type=None, **kwargs):
         try:
-            return self.__clients[host].update(index=index, id=id_, doc_type=doc_type, body={'doc': data}, **kwargs)
+            return self.__clients[host].update(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                               body={'doc': data}, **kwargs)
         except exceptions.NotFoundError:
             return {'document_missing_exception': {'index': index, 'id': id_, 'Error': 'document missing'}}
 
     def __upsert(self, index: str, id_, data: dict, host, doc_type=None, **kwargs):
         try:
-            return self.__clients[host].create(index=index, id=id_, doc_type=doc_type, document=data, **kwargs)
+            return self.__clients[host].create(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                               document=data, **kwargs)
         except exceptions.ConflictError:
-            return self.__clients[host].update(index=index, id=id_, doc_type=doc_type, body={'doc': data}, **kwargs)
+            return self.__clients[host].update(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
+                                               body={'doc': data}, **kwargs)
 
     @classmethod
     def __bulk_upsert(cls, primary, data, exists_ids):
