@@ -53,6 +53,18 @@ def es_exists(ids: list):
     print(es_clients.exists_ids(index, ids, hosts))
 
 
+search_b = es_clients.search_body
+search_b.update(body_type1={"query": {"bool": {"must": {"exists": {"field": "{}"}}}}})
+search_b["body_type2"] = {"query": {"bool": {"must": {"exists": {"field": "{}"}}}}}
+
+
+def es_search(body_args: tuple = ('id',)):
+    print(search_b.body_type_list)
+    res = es_clients.search(index, 'exists', body_args, 'dt')
+    for i in res:
+        print(i)
+
+
 def es_original_func():
     print(es_clients['dt'].ping())
 
