@@ -27,16 +27,17 @@ class ExecES:
     def upsert(self, index: str, id_, data: dict, hosts: list, doc_type=None, **kwargs):
         return {host: self.__upsert(index, id_, data, host, doc_type, **kwargs) for host in set(hosts)}
 
-    def bulk_upsert(self, index: str, data: list = None, hosts: list = None, primary='id', **kwargs):
+    def bulk_upsert(self, index: str, data: list = None, hosts: list = None, primary='id', chunk_size=500, **kwargs):
         exists_ids = self.exists_ids(index, [i[primary] for i in data], hosts)
         return {host: [self.__bulk_upsert_report(k, v) for k, v in helpers.parallel_bulk(
-            self.__clients[host], self.__bulk_upsert(primary, data, exists_ids[host]), index=index, **kwargs)]
-                for host in set(hosts)}
+            self.__clients[host], self.__bulk_upsert(primary, data, exists_ids[host]), index=index,
+            chunk_size=chunk_size, **kwargs)] for host in set(hosts)}
 
-    def bulk_delete(self, index: str, ids: list = None, hosts: list = None, **kwargs):
-        data = [{'_op_type': 'delete', '_id': i} for i in ids]
+    def bulk_delete(self, index: str, ids: list = None, hosts: list = None,
+                    chunk_size=500, ignore_status=(404,), **kwargs):
         return {host: [self.__bulk_upsert_report(k, v) for k, v in helpers.parallel_bulk(
-            self.__clients[host], actions=data, index=index, **kwargs)] for host in set(hosts)}
+            self.__clients[host], actions=[{'_op_type': 'delete', '_id': i} for i in ids],
+            index=index, chunk_size=chunk_size, ignore_status=ignore_status, **kwargs)] for host in set(hosts)}
 
     def mget(self, index: str, ids: list, hosts: list, _source_includes=None, **kwargs):
         return {host: self.__mget(index, ids, host, _source_includes, **kwargs) for host in set(hosts)}
