@@ -2,8 +2,7 @@ from execelasticsearch.handler import ExecES
 
 config_num = 0
 dt_config = [dict(hosts=[{'host': "0.0.0.0"}]), dict(hosts=[{'host': "0.0.0.0"}], doc_type='tags')][config_num]
-dp_config = [dict(hosts=[{'host': "0.0.0.0"}]), dict(hosts=[{'host': "0.0.0.0"}], doc_type='tags')][config_num]
-es_clients = ExecES(dt=dt_config, dp=dp_config)
+es_clients = ExecES(dt=dt_config)
 
 
 index = 'exec_es_test'
