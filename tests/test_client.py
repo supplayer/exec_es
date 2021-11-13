@@ -2,7 +2,8 @@ from execelasticsearch.handler import ExecES
 
 config_num = 0
 dt_config = [dict(hosts=[{'host': "0.0.0.0"}]), dict(hosts=[{'host': "0.0.0.0"}], doc_type='tags')][config_num]
-es_clients = ExecES(dt=dt_config)
+dp_config = [dict(hosts=[{'host': "0.0.0.0"}]), dict(hosts=[{'host': "0.0.0.0"}], doc_type='tags')][config_num]
+es_clients = ExecES(dt=dt_config, dp=dp_config)
 
 
 index = 'exec_es_test'
@@ -42,6 +43,11 @@ def es_bulk_upsert(data_):
 def es_bulk_delete(data_):
     ids = [i['id'] for i in data_]
     print(es_clients.bulk_delete(index, ids, hosts))
+
+
+def es_mget(data_, _source_includes=None):
+    ids = [i['id'] for i in data_]
+    print(es_clients.mget(index, ids, hosts, _source_includes=_source_includes))
 
 
 def es_exists(ids: list):
