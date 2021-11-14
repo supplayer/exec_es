@@ -90,12 +90,12 @@ class ExecES:
 
     def __scroll_data(self, search_response, host):
         sid = search_response['_scroll_id']
-        scroll_size = search_response['hits']['total']['value']
-        while scroll_size > 0:
-            yield search_response['hits']['hits'] if search_response else []
+        scroll_data = search_response['hits']['hits']
+        while len(scroll_data) > 0:
+            yield scroll_data
             search_response = self.__clients[host].scroll(scroll_id=sid, scroll='2m')
             sid = search_response['_scroll_id']
-            scroll_size = len(search_response['hits']['hits'])
+            scroll_data = search_response['hits']['hits']
 
     def __update_or_ignore(self, index: str, id_, data: dict, host, doc_type=None, **kwargs):
         try:
