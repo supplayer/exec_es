@@ -1,12 +1,13 @@
-from execelasticsearch.handler import ExecES
+from execelasticsearch import ExecES, ClientConfig
 
-config_num = 0
-dt_config = [dict(hosts=[{'host': "0.0.0.0"}]), dict(hosts=[{'host': "0.0.0.0"}], doc_type='tags')][config_num]
-es_clients = ExecES(dt=dt_config)
+
+dt_config = ClientConfig(hosts=[{'host': "172.28.0.1"}])
+dp_config = ClientConfig(hosts=[{'host': "172.28.0.2"}], doc_type='your_tags')
+es_clients = ExecES(dt=dt_config, dp=dp_config)
 
 
 index = 'exec_es_test'
-hosts = ["dt"]
+hosts = ["dt", 'dp']
 
 
 def es_create(data_, dex=0):
