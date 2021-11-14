@@ -74,9 +74,11 @@ def es_exists(ids: list):
 search_b = es_clients.search_body
 search_b.update(body_type1={"query": {"bool": {"must": {"exists": {"field": "{}"}}}}})
 search_b["body_type2"] = {"query": {"bool": {"must": {"exists": {"field": "{}"}}}}}
+print(search_b.body_type_list)  # show default body_type list
 
-def es_search(body_args: tuple = ('id',)):
-    res = es_clients.search(index, 'exists', body_args, 'dt')
+
+def es_search(body_type= 'exists', body_args: tuple = ('id',)):
+    res = es_clients.search(index, body_type, body_args, 'dt')
     for i in res:
         print(i)
 
