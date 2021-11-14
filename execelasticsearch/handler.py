@@ -69,20 +69,20 @@ class ExecES:
             self.__clients[host], actions=[{'_op_type': 'delete', '_id': i} for i in ids],
             index=index, chunk_size=chunk_size, ignore_status=ignore_status, **kwargs)]) for host in set(hosts)}
 
-    def mget(self, index: str, ids: list, hosts: list, _source_includes=None, **kwargs):
+    def mget(self, index: str, ids: list, hosts: list, _source_includes: list = None, **kwargs):
         return {host: self.__mget(index, ids, host, _source_includes, **kwargs) for host in set(hosts)}
 
     def exists_ids(self, index: str, ids: list, hosts: list, **kwargs):
         return {host: list(self.__mget(index, ids, host, **kwargs).keys()) for host in set(hosts)}
 
     def search(self, index: str, body_type: str, body_args: tuple, host: str, doc_type=None,
-               scroll='2m', size=1000, _source_includes=None, **kwargs) -> iter:
+               scroll='2m', size=1000, _source_includes: list = None, **kwargs) -> iter:
         """
         body_type: execelasticsearch.handler.SearchBody().body_type_list will show default body_type.
         """
         source = True if _source_includes or kwargs.get('_source_excludes') else False
         body = self.search_body[body_type](*body_args)
-        res = self.__clients[host].search(index=index, body=body, doc_type=doc_type or self.__doc_type(host),
+        res = self.__clients[host].search(index=index, body=body, doc_type=doc_type,
                                           scroll=scroll, size=size, _source=source,
                                           _source_includes=_source_includes, **kwargs)
         for data in self.__scroll_data(res, host):
