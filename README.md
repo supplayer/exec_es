@@ -15,8 +15,11 @@ pip install exec-es
 ## Usage
 
 ```python
-from execelasticsearch import ExecES, ClientConfig
+from execelasticsearch import ExecES, ClientConfig, MappingData
 
+
+# MappingData.SearchBody.update will change defult Search Body Template, use before ExecES init.
+MappingData.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
 
 dt_config = ClientConfig(hosts=[{'host': "172.28.0.1"}])
 dp_config = ClientConfig(hosts=[{'host': "172.28.0.2"}], doc_type='your_tags')
@@ -72,13 +75,13 @@ def es_exists(ids: list):
 
     
 search_b = es_clients.search_body
-search_b.update(body_type1={"query": {"bool": {"must": {"exists": {"field": "{}"}}}}})
-search_b["body_type2"] = {"query": {"bool": {"must": {"exists": {"field": "{}"}}}}}
+search_b.update(body_type1={"query": {"bool": {"must": {"exists": {"field": "<<field>>"}}}}})
+search_b["body_type2"] = {"query": {"bool": {"must": {"exists": {"field": "<<field>>"}}}}}
 print(search_b.body_type_list)  # show default body_type list
 
 
-def es_search(body_type= 'exists', body_args: tuple = ('id',)):
-    res = es_clients.search(index, body_type, body_args, 'dt')
+def es_search(body_kwargs: dict = None):
+    res = es_clients.search(index, body_kwargs or {'match': dict(field='id', value=1)}, 'dt')
     for i in res:
         print(i)
 

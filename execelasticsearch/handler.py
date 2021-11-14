@@ -1,31 +1,32 @@
 from execelasticsearch.connection import Clients
+from execelasticsearch.mapping import MappingData
 from elasticsearch import Elasticsearch, helpers, exceptions
 from json import loads, dumps
 
 
 def _pack(body):
-    body = dumps(body).replace('{', '{{').replace('}', '}}').replace('{{}}', '{}')
-    return lambda *args: loads(body.format(*args))
+    body = dumps(body).replace('{', '{{').replace('}', '}}').replace('<<', '{').replace('>>', '}')
+    return lambda **kwargs: loads(body.format(**kwargs))
 
 
 class SearchBody:
-    __body_list = dict(
-        exists=_pack({"query": {"bool": {"must": {"exists": {"field": "{}"}}}}}),
-        not_exists=_pack({"query": {"bool": {"must_not": {"exists": {"field": "{}"}}}}}),
-    )
+    __search_body = MappingData.SearchBody.Template
+    __body_list = {k: _pack(v) for k, v in __search_body.items()}
 
     def __setitem__(self, body_type: str, body_args: str):
+        self.__search_body.update({body_type.lower(): body_args})
         self.__body_list.update({body_type.lower(): _pack(body_args)})
 
     def __getitem__(self, body_type):
         return self.__body_list[body_type]
 
     def update(self, **kwargs):
+        self.__search_body.update({body_type.lower(): body_args for body_type, body_args in kwargs.items()})
         self.__body_list.update({body_type.lower(): _pack(body_args) for body_type, body_args in kwargs.items()})
 
     @property
     def body_type_list(self):
-        return list(self.__body_list.keys())
+        return "\n"+"\n".join([dumps({k: v}) for k, v in self.__search_body.items()])+"\n"
 
 
 class ExecES:
@@ -75,13 +76,14 @@ class ExecES:
     def exists_ids(self, index: str, ids: list, hosts: list, **kwargs):
         return {host: list(self.__mget(index, ids, host, **kwargs).keys()) for host in set(hosts)}
 
-    def search(self, index: str, body_type: str, body_args: tuple, host: str, doc_type=None,
+    def search(self, index: str, body_kwargs: dict, host: str, doc_type=None,
                scroll='2m', size=1000, _source_includes: list = None, **kwargs) -> iter:
         """
         body_type: execelasticsearch.handler.SearchBody().body_type_list will show default body_type.
         """
         source = True if _source_includes or kwargs.get('_source_excludes') else False
-        body = self.search_body[body_type](*body_args)
+        body_type, = body_kwargs
+        body = self.search_body[body_type](**body_kwargs[body_type])
         res = self.__clients[host].search(index=index, body=body, doc_type=doc_type,
                                           scroll=scroll, size=size, _source=source,
                                           _source_includes=_source_includes, **kwargs)
