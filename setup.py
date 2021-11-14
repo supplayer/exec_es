@@ -8,6 +8,7 @@ with open("README.md", "r") as fh:
 proj_name = re.search(pattern, long_description).group()[2:]
 description = "ElasticSearch Handler"
 install_requires = ['elasticsearch', 'requests']
+packages_include = ('execelasticsearch',)
 author = "Supplayer"
 author_email = "x254724521@hotmail.com"
 
@@ -19,7 +20,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=f"https://github.com/{author}/{proj_name}.git",
-    packages=setuptools.find_packages(include=('',)),
+    packages=setuptools.find_packages(include=packages_include),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
