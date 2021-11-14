@@ -7,11 +7,11 @@ class MappingData:
         )
 
         @classmethod
-        def update(cls, body_type, key, value):
+        def update(cls, body_type, target_key, replace_value):
             data = cls.__upack(cls.Template[body_type])
             while True:
-                if data['key'] == key:
-                    data['data'][data['key']] = value
+                if data['key'] == target_key:
+                    data['data'][data['key']] = replace_value
                     break
                 data = cls.__upack(data['value'])
 
