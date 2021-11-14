@@ -15,11 +15,11 @@ pip install exec-es
 ## Usage
 
 ```python
-from execelasticsearch.handler import ExecES
+from execelasticsearch import ExecES, ClientConfig
 
-choose_config = 0
-dt_config = [dict(hosts=[{'host': "172.28.0.1"}]), dict(hosts=[{'host': "172.28.0.1"}], doc_type='tags')][choose_config]
-dp_config = [dict(hosts=[{'host': "172.28.0.2"}]), dict(hosts=[{'host': "172.28.0.2"}], doc_type='tags')][choose_config]
+
+dt_config = ClientConfig(hosts=[{'host': "172.28.0.1"}])
+dp_config = ClientConfig(hosts=[{'host': "172.28.0.2"}], doc_type='your_tags')
 es_clients = ExecES(dt=dt_config, dp=dp_config)
 
 
