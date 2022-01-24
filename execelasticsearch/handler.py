@@ -128,4 +128,4 @@ class ExecES:
     def __mget(self, index: str, ids: list, host: str, _source_includes=None, **kwargs):
         source = True if _source_includes or kwargs.get('_source_excludes') else False
         args = dict(body={'ids': ids}, index=index, _source=source, _source_includes=_source_includes, **kwargs)
-        return {i['_id']: i.get('_source') for i in self.__clients[host].mget(**args)['docs'] if i['found']}
+        return {i['_id']: i.get('_source') for i in self.__clients[host].mget(**args)['docs'] if i.get('found')}
