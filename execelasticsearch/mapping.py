@@ -1,4 +1,4 @@
-class MappingData:
+class MappingMethod:
     class SearchBody:
         Template = dict(
             exists={"query": {"bool": {"must": {"exists": {"field": "<<field>>"}}}}},
@@ -22,5 +22,5 @@ class MappingData:
 
 
 if __name__ == '__main__':
-    MappingData.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
-    print(MappingData.SearchBody.Template)
+    MappingMethod.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
+    print(MappingMethod.SearchBody.Template)

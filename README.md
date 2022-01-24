@@ -15,16 +15,14 @@ pip install exec-es
 ## Usage
 
 ```python
-from execelasticsearch import ExecES, ClientConfig, MappingData
-
+from execelasticsearch import ExecES, ClientConfig, MappingMethod
 
 # MappingData.SearchBody.update will change defult Search Body Template, use before ExecES init.
-MappingData.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
+MappingMethod.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
 
 dt_config = ClientConfig(hosts=[{'host': "172.28.0.1"}])
 dp_config = ClientConfig(hosts=[{'host': "172.28.0.2"}], doc_type='your_tags')
 es_clients = ExecES(dt=dt_config, dp=dp_config)
-
 
 index = 'exec_es_test'
 hosts = ["dt", "dp"]
@@ -73,7 +71,7 @@ def es_mget(data_, _source_includes=None):
 def es_exists(ids: list):
     print(es_clients.exists_ids(index, ids, hosts))
 
-    
+
 search_b = es_clients.search_body
 search_b.update(body_type1={"query": {"bool": {"must": {"exists": {"field": "<<field>>"}}}}})
 search_b["body_type2"] = {"query": {"bool": {"must": {"exists": {"field": "<<field>>"}}}}}
