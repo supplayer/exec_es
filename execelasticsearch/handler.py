@@ -1,5 +1,5 @@
 from execelasticsearch.connection import Clients
-from execelasticsearch.mapping import MappingData
+from execelasticsearch.mapping import MappingMethod
 from elasticsearch import Elasticsearch, helpers, exceptions
 from json import loads, dumps
 
@@ -10,7 +10,7 @@ def _pack(body):
 
 
 class SearchBody:
-    __search_body = MappingData.SearchBody.Template
+    __search_body = MappingMethod.SearchBody.Template
     __body_list = {k: _pack(v) for k, v in __search_body.items()}
 
     def __setitem__(self, body_type: str, body_args: str):

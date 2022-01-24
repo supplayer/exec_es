@@ -1,7 +1,7 @@
-from execelasticsearch import ExecES, ClientConfig, MappingData
+from execelasticsearch import ExecES, ClientConfig, MappingMethod
 
 # MappingData.SearchBody.update will change defult Search Body Template, use before ExecES init.
-MappingData.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
+MappingMethod.SearchBody.update('match', 'match', {"<<field>>": {"query": "<<value>>"}})
 
 dt_config = ClientConfig(hosts=[{'host': "172.28.0.1"}])
 dp_config = ClientConfig(hosts=[{'host': "172.28.0.2"}], doc_type='your_tags')
