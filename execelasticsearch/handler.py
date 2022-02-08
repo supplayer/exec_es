@@ -61,7 +61,7 @@ class ExecES:
     def bulk_upsert(self, index: str, data: list = None, hosts: list = None, primary='id', chunk_size=500, **kwargs):
         exists_ids = self.exists_ids(index, [i[primary] for i in data], hosts)
         return {host: dict([self.__bulk_upsert_report(v) for k, v in helpers.parallel_bulk(
-            self.__clients[host], self.__bulk_upsert(primary, data, exists_ids[host]), index=index,
+            self.__clients[host], self.__bulk_upsert(primary, data, exists_ids[host], host), index=index,
             chunk_size=chunk_size, **kwargs)]) for host in set(hosts)}
 
     def bulk_delete(self, index: str, ids: list = None, hosts: list = None,
@@ -114,10 +114,10 @@ class ExecES:
             return self.__clients[host].update(index=index, id=id_, doc_type=doc_type or self.__doc_type(host),
                                                body={'doc': data}, **kwargs)
 
-    @classmethod
-    def __bulk_upsert(cls, primary, data, exists_ids):
+    def __bulk_upsert(self, primary, data, exists_ids, host):
         return [{**({'_op_type': 'update', 'doc': i} if str(i[primary]) in exists_ids else
-                    {'_op_type': 'create', '_source': i}), **{'_id': i[primary]}} for i in data]
+                    {'_op_type': 'create', '_source': i}),
+                 **{'_id': i[primary], "_type": self.__doc_type(host)}} for i in data]
 
     @classmethod
     def __bulk_upsert_report(cls, v):
